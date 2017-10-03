@@ -84,11 +84,11 @@ class Network:
     def deconvolution_layers(self):
         self.deconv1 = tf.layers.conv2d_transpose(self.pred3, num_classes, kernel_size=4, strides=2, padding='same',
                                                   kernel_initializer=init, kernel_regularizer=regularizer, name='deconv1')
-        #add1 = tf.add(self.pred2, self.deconv1)
-        self.deconv2 = tf.layers.conv2d_transpose(self.deconv1, num_classes, kernel_size=4, strides=2, padding='same',
+        add1 = tf.add(self.pred2, self.deconv1)
+        self.deconv2 = tf.layers.conv2d_transpose(add1, num_classes, kernel_size=4, strides=2, padding='same',
                                                   kernel_initializer=init, kernel_regularizer=regularizer, name='deconv2')
-        #add2 = tf.add(self.pred1, self.deconv2)
-        self.deconv3 = tf.layers.conv2d_transpose(self.deconv2, num_classes, kernel_size=16, strides=8, padding='same',
+        add2 = tf.add(self.pred1, self.deconv2)
+        self.deconv3 = tf.layers.conv2d_transpose(add2, num_classes, kernel_size=16, strides=8, padding='same',
                                                   kernel_initializer=init, kernel_regularizer=regularizer, name='deconv3')
         self.output = self.deconv3
 
@@ -220,11 +220,11 @@ X_test = (read_image(f) for f in tests)
 
 with tf.Session() as sess:
     nw = Network()
-    epochs = 1
+    epochs = 2
     batch_size = 5
     n_batches = int((len(trains) - 1) / batch_size + 1)
     nw.train(sess, X_train, y_train, 0.0001, 0.5, epochs, batch_size, n_batches, save_path="./road2.ckpt")
-    nw.validate(sess, X_val, y_val)
+    #nw.validate(sess, X_val, y_val)
     inferred = nw.test(sess, X_test)
     print("inferred ", len(inferred))
     plot_images(inferred)
