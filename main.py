@@ -43,6 +43,7 @@ def plot_images(images):
 class Network:
 
     def convolution_layers(self):
+        init = None
         reg = tf.contrib.layers.l2_regularizer(1e-3),
         self.conv11 = tf.layers.conv2d(self.input, 64, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv11')
         self.conv12 = tf.layers.conv2d(self.conv11, 64, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv12')
@@ -56,9 +57,16 @@ class Network:
         self.conv41 = tf.layers.conv2d(self.pool3, 512, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv41')
         self.conv42 = tf.layers.conv2d(self.conv41, 512, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv42')
         self.pool4 = tf.layers.max_pooling2d(self.conv42, pool_size=(2,2), strides=(2,2), padding='same', name='pool4')
-        self.conv51 = tf.layers.conv2d(self.pool4, 4096, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv51')
-        self.conv52 = tf.layers.conv2d(self.conv51, 4096, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv52')
+        self.conv51 = tf.layers.conv2d(self.pool4, 512, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv51')
+        self.conv52 = tf.layers.conv2d(self.conv51, 512, kernel_size=(3,3), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='conv52')
         self.pool5 = tf.layers.max_pooling2d(self.conv52, pool_size=(2,2), strides=(2,2), padding='same', name='pool5')
+        self.fc6 = tf.layers.conv2d(self.pool5, 4096, kernel_size=(7,7), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='fc6')
+        self.keep_prob = tf.placeholder(tf.float32)
+        self.dropout1 = tf.layers.dropout(self.fc6, self.keep_prob)
+        self.fc7 = tf.layers.conv2d(self.dropout1, 4096, kernel_size=(1,1), padding='same', activation=tf.nn.relu, kernel_initializer=init, name='fc7')
+        self.dropout2 = tf.layers.dropout(self.fc7, self.keep_prob)
+        self.pool7 = self.dropout2
+
 
     def vgg_convolution_layers(self, vgg_path):
         vgg_tag = 'vgg16'
@@ -74,12 +82,12 @@ class Network:
         self.keep_prob = tf.get_default_graph().get_tensor_by_name(vgg_keep_prob_tensor_name)
         self.pool3 = tf.get_default_graph().get_tensor_by_name(vgg_layer3_out_tensor_name)
         self.pool4 = tf.get_default_graph().get_tensor_by_name(vgg_layer4_out_tensor_name)
-        self.pool5 = tf.get_default_graph().get_tensor_by_name(vgg_layer7_out_tensor_name)
+        self.pool7 = tf.get_default_graph().get_tensor_by_name(vgg_layer7_out_tensor_name)
 
     def prediction_layers(self):
         self.pred1 = tf.layers.conv2d(self.pool3, num_classes, kernel_size=(1,1), padding='same', kernel_initializer=init, kernel_regularizer=regularizer)
         self.pred2 = tf.layers.conv2d(self.pool4, num_classes, kernel_size=(1,1), padding='same', kernel_initializer=init, kernel_regularizer=regularizer)
-        self.pred3 = tf.layers.conv2d(self.pool5, num_classes, kernel_size=(1,1), padding='same', kernel_initializer=init, kernel_regularizer=regularizer)
+        self.pred3 = tf.layers.conv2d(self.pool7, num_classes, kernel_size=(1,1), padding='same', kernel_initializer=init, kernel_regularizer=regularizer)
 
     def deconvolution_layers(self):
         self.deconv1 = tf.layers.conv2d_transpose(self.pred3, num_classes, kernel_size=4, strides=2, padding='same',
@@ -113,8 +121,8 @@ class Network:
         self.label = tf.placeholder(tf.float32, [None, input_image_shape[0], input_image_shape[1], 2], "label")
         self.learning_rate = tf.placeholder(tf.float32, [], "learning_rate")
 
-        #self.convolution_layers()
-        self.vgg_convolution_layers("./data/vgg")
+        self.convolution_layers()
+        # self.vgg_convolution_layers("./data/vgg")
         self.prediction_layers()
         self.deconvolution_layers()
         self.loss_layer()
